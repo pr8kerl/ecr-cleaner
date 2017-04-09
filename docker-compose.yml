@@ -1,0 +1,7 @@
+---
+base:
+  build: .
+  volumes:
+    - ".:/app"
+    - "$HOME/.aws:/root/.aws"
+
