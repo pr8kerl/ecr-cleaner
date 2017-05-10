@@ -13,6 +13,8 @@
 # Adapted for MYOB. Original available here: https://github.com/awslabs/ecr-cleanup-lambda
 
 import os
+import sys
+sys.path.append("{}/deps".format(os.getcwd()))
 import boto3
 import argparse
 import requests
@@ -22,8 +24,8 @@ from collections import defaultdict
 REGION = os.environ.get('REGION', None)
 DRYRUN = bool(os.environ.get('DRYRUN', 1))
 IMAGES_TO_KEEP = int(os.environ.get('IMAGES_TO_KEEP', 1000))
-PROD_ROLE = 'arn:aws:iam::492890214218:role/ecs-dev-read'
-PROD_REGION = 'ap-southeast-2'
+REMOTE_ROLE = 'arn:aws:iam::492890214218:role/ecs-dev-read'
+REMOTE_REGION = 'ap-southeast-2'
 IMAGES_FOR_DELETION = defaultdict(list)
 TAGS_FOR_DELETION = defaultdict(list)
 
@@ -31,15 +33,20 @@ TAGS_FOR_DELETION = defaultdict(list)
 def handler(event, context):
 
     session = boto3.session.Session()
+    active_images = defaultdict(list)
 
-    prod_credentials = assume_role(PROD_ROLE)
-    prod_session = boto3.Session(
+    if REMOTE_ROLE is not None:
+      remote_credentials = assume_role(REMOTE_ROLE)
+      remote_session = boto3.Session(
     	aws_access_key_id = prod_credentials['AccessKeyId'],
     	aws_secret_access_key = prod_credentials['SecretAccessKey'],
     	aws_session_token = prod_credentials['SessionToken'],
-    )
+      )
+      active_images = list_active_images(remote_session,REMOTE_REGION)
+      print("active images that are running in containers")
+      for image in active_images:
+        print("active remote image: " + image)
 
-    active_images = list_active_images(prod_session,PROD_REGION)
     active_images = list_active_images(session,REGION,active_images)
     print("active images that are running in containers")
     for image in active_images:

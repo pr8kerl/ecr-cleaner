@@ -10,6 +10,5 @@ RUN apk --update add bash curl unzip zip && \
 
 RUN pip install --upgrade pip && pip install awscli
 
-WORKDIR /root/app
-
-CMD ["/bin/sh"]
+WORKDIR /app
+ENV PYTHONPATH $PYTHONPATH:/app
